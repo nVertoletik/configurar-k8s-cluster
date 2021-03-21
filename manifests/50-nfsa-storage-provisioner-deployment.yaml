@@ -1,0 +1,47 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nas-provisioner
+  namespace: nfs-nas
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: nfs-client-provisioner
+      release: nas-provisioner
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app: nfs-client-provisioner
+        release: nas-provisioner
+    spec:
+      containers:
+      - env:
+        - name: PROVISIONER_NAME
+          value: nfs-nas
+        - name: NFS_SERVER
+          value: 192.168.1.199
+        - name: NFS_PATH
+          value: /volume1/storageclass/
+        image: amnestor/nfs-client-provisioner-arm
+        imagePullPolicy: IfNotPresent
+        resources:
+          limits:
+            cpu: 50m
+            memory: 70Mi
+        name: nfs-client-provisioner
+        volumeMounts:
+        - mountPath: /persistentvolumes
+          name: nfs-client-root
+      dnsPolicy: ClusterFirst
+      restartPolicy: Always
+      terminationGracePeriodSeconds: 30
+      serviceAccount: nfs-client-provisioner
+      serviceAccountName: nfs-client-provisioner
+      volumes:
+      - name: nfs-client-root
+        nfs:
+          path: /volume1/storageclass/
+          server: 192.168.1.199
